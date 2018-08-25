@@ -1,23 +1,11 @@
 import numpy as np 
 from . import ModelEvaluation
 
-def evaluate(model, X, y, scorer):
-    """ Evaluates a machine learning model using a feature matrix and
-    target vector
-    
-    Parameters
-    ----------
-    model: sklearn.Model
-        A scikit-learn model used to make predictions
-    X: pandas.DataFrame
-        The feature matrix as a pandas DataFrame with named columns
-    y: np.array
-        A NumPy array or pandas.Series of target values
-    """
-    model_predictions = model.model.predict(X)
-    score = scorer(y, model_predictions)
+def get_scorer():
+    from sklearn.metrics import f1_score, make_scorer
+    scorer = make_scorer(f1_score, average='micro')
+    return scorer
 
-    return ModelEvaluation(model.name, model, y, model_predictions, score)
 
 def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
                         n_jobs=-1, train_sizes=np.linspace(.1, 1.0, 5)):
