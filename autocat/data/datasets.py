@@ -40,7 +40,7 @@ def get_training_data(data_path, filters=None, drop_na=False, target_column=None
     ----------
     data_path: string
         The path to the file containing project data.  Expected
-        to have a set of identifier, features, and and target value
+        to have index, identifier, features, and target value
         records
     filters: 
         A list of filter functions to apply to the training dataset after loading it
@@ -55,7 +55,7 @@ def get_training_data(data_path, filters=None, drop_na=False, target_column=None
     from .filters import FeatureFilters
     from ..settings import TARGET_COLUMN
 
-    df = pd.read_csv(data_path)
+    df = pd.read_csv(data_path).set_index('index')
     X = df.drop(TARGET_COLUMN, axis=1)
     y = df.GLCategory
 
@@ -72,7 +72,8 @@ def get_stratified_train_test_split(data, drop=None):
     Parameters
     ----------
     df: pandas.DataFrame
-        The dataframe to split into training and test sets
+        The dataframe to split into training and test sets.  Assumed to have
+        identifier and target columns.
     stratify_on: string
         The column to perform stratified sampling with
     drop: list
@@ -84,12 +85,10 @@ def get_stratified_train_test_split(data, drop=None):
     """
     from sklearn.model_selection import StratifiedShuffleSplit
     from ..settings import TARGET_COLUMN, IDENTIFIER
-    split = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
 
-    if drop is not None:
-        df = data.drop(drop + [IDENTIFIER], axis=1)
-    else:
-        df = data.drop([IDENTIFIER], axis=1)
+    df = data.copy().drop([IDENTIFIER], axis=1)
+
+    split = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
         
     for train_index, test_index in split.split(df, df[TARGET_COLUMN]):
         strat_train_set = df.loc[train_index]

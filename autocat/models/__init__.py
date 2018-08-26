@@ -21,9 +21,24 @@ class Model(object):
         full_pipeline = clone(self.pipeline)
         full_pipeline.steps.append((self.name, self.model))
         return full_pipeline
-        
 
-class GridSearchModel(object):
+    def load(file_path, pipeline):
+        from sklearn.externals import joblib
+        file_model = joblib.load(file_path)
+        model = Model(type(file_model),  file_model, pipeline)
+        return model
+
+    def save(model, file_path):
+        from sklearn.externals import joblib
+        joblib.dump(model, file_path)
+    
+    def score(self, X, y, scorer):
+        model_predictions = self.get_model_pipeline().fit(X, y).predict(X)
+        X_transformed = self.pipeline.fit_transform(X)
+        score = scorer(self.model, X_transformed, y)
+        return (score, model_predictions)
+        
+class GridSearchModel(Model):
   """ A class used to explore hyperparameters of machine learning
   model using grid search.
 
@@ -39,11 +54,9 @@ class GridSearchModel(object):
       A pipeline to apply to the data before fitting the model
   """
 
-  def __init__(self, name, model, param_grid, pipeline):
+  def __init__(self, param_grid, **kwargs):
       from sklearn.base import clone
-      self.name = name
-      self.model = model
-      self.pipeline = pipeline
+      Model.__init__(self, **kwargs)
       self.param_grid = param_grid
 
   def train(self, X, y, cv_folds, scorer):
@@ -64,16 +77,6 @@ class GridSearchModel(object):
 
       self.model = grid_search.best_estimator_.steps[-1][1]
       self.results = pd.DataFrame(grid_search.cv_results_)
-
-  def get_model_pipeline(self):
-      from sklearn.base import clone
-      model_pipeline = clone(self.pipeline)
-      model_pipeline.steps.append((self.name, self.model))
-      return model_pipeline
-  
-  def save(self, file_path):
-      import joblib
-      joblib.dump(self.model, file_path)
 
 class ModelEvaluation(object):
     """ A class used to save a model and its evaluation results
@@ -98,12 +101,11 @@ class ModelEvaluation(object):
     """
     __slots__ = ['name', 'model', 'labels', 'predictions', 'score']
 
-    def __init__(self, name, model, labels, predictions, score):
-        self.name = name
-        self.model = model
-        self.labels = labels
-        self.predictions = predictions
-        self.score = score
+    def __init__(self, model, labels, predictions, score):
+        model = model
+        labels = labels
+        predictions = predictions
+        score = score
     
     def evaluate(self, X, y):
         return ModelEvaluation.evaluate(self, X, y)
